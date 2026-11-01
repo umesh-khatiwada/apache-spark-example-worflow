@@ -1,0 +1,111 @@
+services:
+  spark-master:
+    image: bitnamilegacy/spark:3.5.3
+    container_name: spark-demo-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - ./data:/opt/bitnami/spark/data
+      - ./scripts:/opt/bitnami/spark/scripts
+    networks:
+      - spark-net
+
+  spark-worker-1:
+    image: bitnamilegacy/spark:3.5.3
+    container_name: spark-demo-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./data:/opt/bitnami/spark/data
+      - ./scripts:/opt/bitnami/spark/scripts
+    depends_on:
+      - spark-master
+    networks:
+      - spark-net
+
+  spark-worker-2:
+    image: bitnamilegacy/spark:3.5.3
+    container_name: spark-demo-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8082:8081"
+    volumes:
+      - ./data:/opt/bitnami/spark/data
+      - ./scripts:/opt/bitnami/spark/scripts
+    depends_on:
+      - spark-master
+    networks:
+      - spark-net
+
+  zookeeper:
+    image: bitnamilegacy/zookeeper:3.9.2
+    container_name: spark-demo-zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+    networks:
+      - spark-net
+
+  kafka:
+    image: bitnamilegacy/kafka:3.7.0
+    container_name: spark-demo-kafka
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,EXTERNAL://:29092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    depends_on:
+      - zookeeper
+    networks:
+      - spark-net
+
+  jupyter:
+    image: jupyter/pyspark-notebook:spark-3.5.0
+    container_name: spark-demo-jupyter
+    user: root
+    environment:
+      - GRANT_SUDO=yes
+      - JUPYTER_ENABLE_LAB=yes
+      - SPARK_MASTER=spark://spark-master:7077
+      - PYTHONPATH=/usr/local/spark/python:/usr/local/spark/python/lib/py4j-0.10.9.7-src.zip:/home/jovyan/work
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/home/jovyan/work
+    depends_on:
+      - spark-master
+    networks:
+      - spark-net
+
+networks:
+  spark-net:
+    driver: bridge
