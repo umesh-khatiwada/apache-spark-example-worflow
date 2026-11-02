@@ -1,6 +1,6 @@
 services:
   spark-master:
-    image: bitnamilegacy/spark:3.5.3
+    image: bitnamilegacy/spark:3.5.0
     container_name: spark-demo-master
     environment:
       - SPARK_MODE=master
@@ -14,11 +14,12 @@ services:
     volumes:
       - ./data:/opt/bitnami/spark/data
       - ./scripts:/opt/bitnami/spark/scripts
+      - .:/home/jovyan/work
     networks:
       - spark-net
 
   spark-worker-1:
-    image: bitnamilegacy/spark:3.5.3
+    image: bitnamilegacy/spark:3.5.0
     container_name: spark-demo-worker-1
     environment:
       - SPARK_MODE=worker
@@ -34,13 +35,14 @@ services:
     volumes:
       - ./data:/opt/bitnami/spark/data
       - ./scripts:/opt/bitnami/spark/scripts
+      - .:/home/jovyan/work
     depends_on:
       - spark-master
     networks:
       - spark-net
 
   spark-worker-2:
-    image: bitnamilegacy/spark:3.5.3
+    image: bitnamilegacy/spark:3.5.0
     container_name: spark-demo-worker-2
     environment:
       - SPARK_MODE=worker
@@ -56,6 +58,30 @@ services:
     volumes:
       - ./data:/opt/bitnami/spark/data
       - ./scripts:/opt/bitnami/spark/scripts
+      - .:/home/jovyan/work
+    depends_on:
+      - spark-master
+    networks:
+      - spark-net
+
+  spark-worker-3:
+    image: bitnamilegacy/spark:3.5.0
+    container_name: spark-demo-worker-3
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8083:8081"
+    volumes:
+      - ./data:/opt/bitnami/spark/data
+      - ./scripts:/opt/bitnami/spark/scripts
+      - .:/home/jovyan/work
     depends_on:
       - spark-master
     networks:
@@ -92,6 +118,7 @@ services:
     image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: spark-demo-jupyter
     user: root
+    working_dir: /home/jovyan/work
     environment:
       - GRANT_SUDO=yes
       - JUPYTER_ENABLE_LAB=yes

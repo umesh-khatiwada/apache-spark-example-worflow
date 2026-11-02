@@ -33,12 +33,18 @@ import shutil
 import time
 
 # Project root setup (compatible with both standalone execution and Jupyter notebooks)
-if "__file__" in locals():
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-else:
-    project_root = os.path.abspath(os.path.join(os.getcwd(), "../..") if "notebooks" in os.getcwd() else os.getcwd())
-    os.chdir(project_root)
+def _find_project_root():
+    cur = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
+    while cur != os.path.dirname(cur):
+        if os.path.exists(os.path.join(cur, "data", "raw")):
+            return cur
+        cur = os.path.dirname(cur)
+    if os.path.exists("/home/jovyan/work/data/raw"):
+        return "/home/jovyan/work"
+    return os.path.abspath(os.getcwd())
 
+project_root = _find_project_root()
+os.chdir(project_root)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 from scripts.spark_session import get_spark_session

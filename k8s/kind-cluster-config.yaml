@@ -1,0 +1,26 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: spark-cluster
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 30080
+        protocol: TCP
+      - containerPort: 30040
+        hostPort: 30040
+        protocol: TCP
+      - containerPort: 30888
+        hostPort: 30888
+        protocol: TCP
+    extraMounts:
+      - hostPath: /home/umesh-pc/Desktop/workspace/apache-spark-example-worflow
+        containerPath: /mnt/spark-workspace
+  - role: worker
+    extraMounts:
+      - hostPath: /home/umesh-pc/Desktop/workspace/apache-spark-example-worflow
+        containerPath: /mnt/spark-workspace
+  - role: worker
+    extraMounts:
+      - hostPath: /home/umesh-pc/Desktop/workspace/apache-spark-example-worflow
+        containerPath: /mnt/spark-workspace

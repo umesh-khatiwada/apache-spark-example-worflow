@@ -22,19 +22,28 @@ def convert_script_to_notebook(py_path: str, nb_path: str):
         "name": "python3"
     }
 
-    # Split by double docstring or sections
-    parts = content.split('"""')
+    # Extract header docstring if present
     cells = []
-    
-    # If the file starts with docstrings, extract header as markdown
-    if content.startswith('"""') and len(parts) >= 3:
-        header_md = parts[1].strip()
+    if content.startswith('"""'):
+        end_header = content.find('"""', 3)
+        header_md = content[3:end_header].strip()
         cells.append(nbf.v4.new_markdown_cell(header_md))
-        code_body = parts[2].strip()
-        trailing_md = parts[3].strip() if len(parts) >= 4 else ""
+        rest = content[end_header + 3:]
     else:
-        code_body = content.strip()
-        trailing_md = ""
+        rest = content
+
+    # Extract trailing docstring (Expected Output / Exercises) if present
+    trailing_md = ""
+    if '"""' in rest:
+        last_idx = rest.rfind('"""')
+        prev_idx = rest.rfind('"""', 0, last_idx)
+        if prev_idx != -1 and ("Expected Output" in rest[prev_idx:] or "Try It Yourself" in rest[prev_idx:]):
+            trailing_md = rest[prev_idx + 3:last_idx].strip()
+            code_body = rest[:prev_idx].strip()
+        else:
+            code_body = rest.strip()
+    else:
+        code_body = rest.strip()
 
     # Split code body into cells by '# %%' if present, or create code cells
     if "# %%" in code_body:

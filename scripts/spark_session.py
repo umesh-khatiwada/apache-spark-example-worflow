@@ -8,9 +8,9 @@ import os
 import sys
 from pyspark.sql import SparkSession
 
-# Ensure workers and driver use the exact same Python interpreter
-os.environ["PYSPARK_PYTHON"] = sys.executable
-os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
+# Ensure workers and driver use valid Python interpreters across environments
+os.environ.setdefault("PYSPARK_PYTHON", "python3")
+os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
 
 def get_spark_session(app_name: str = "SparkDemoApp", extra_configs: dict = None) -> SparkSession:
     """

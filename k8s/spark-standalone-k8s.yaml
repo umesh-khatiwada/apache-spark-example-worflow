@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-master
+  namespace: spark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-master
+  template:
+    metadata:
+      labels:
+        app: spark-master
+    spec:
+      serviceAccountName: spark-sa
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: spark-shared-pvc
+      containers:
+        - name: master
+          image: bitnamilegacy/spark:3.5.0
+          workingDir: /opt/spark/work-dir
+          env:
+            - name: SPARK_MODE
+              value: master
+            - name: SPARK_RPC_AUTHENTICATION_ENABLED
+              value: "no"
+            - name: SPARK_MASTER_PORT
+              value: "7077"
+            - name: SPARK_MASTER_WEBUI_PORT
+              value: "8080"
+          ports:
+            - containerPort: 7077
+            - containerPort: 8080
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /opt/spark/work-dir
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master-service
+  namespace: spark
+spec:
+  type: NodePort
+  selector:
+    app: spark-master
+  ports:
+    - name: rpc
+      port: 7077
+      targetPort: 7077
+    - name: webui
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-workers
+  namespace: spark
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spark-worker
+  template:
+    metadata:
+      labels:
+        app: spark-worker
+    spec:
+      serviceAccountName: spark-sa
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: spark-shared-pvc
+      containers:
+        - name: worker
+          image: bitnamilegacy/spark:3.5.0
+          workingDir: /opt/spark/work-dir
+          env:
+            - name: SPARK_MODE
+              value: worker
+            - name: SPARK_MASTER_URL
+              value: spark://spark-master-service:7077
+            - name: SPARK_WORKER_CORES
+              value: "2"
+            - name: SPARK_WORKER_MEMORY
+              value: 2G
+            - name: SPARK_RPC_AUTHENTICATION_ENABLED
+              value: "no"
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /opt/spark/work-dir

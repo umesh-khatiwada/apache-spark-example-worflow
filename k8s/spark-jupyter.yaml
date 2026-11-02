@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-jupyter
+  namespace: spark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-jupyter
+  template:
+    metadata:
+      labels:
+        app: spark-jupyter
+    spec:
+      serviceAccountName: spark-sa
+      volumes:
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: spark-shared-pvc
+        - name: host-dev
+          hostPath:
+            path: /dev
+      containers:
+        - name: jupyter
+          image: jupyter/pyspark-notebook:spark-3.5.0
+          securityContext:
+            privileged: true
+          workingDir: /home/jovyan/work
+          command: ["start-notebook.sh"]
+          args:
+            - "--ServerApp.token="
+            - "--ServerApp.password="
+            - "--ServerApp.allow_origin=*"
+            - "--ServerApp.ip=0.0.0.0"
+          env:
+            - name: GRANT_SUDO
+              value: "yes"
+            - name: JUPYTER_ENABLE_LAB
+              value: "yes"
+            - name: JUPYTER_TOKEN
+              value: ""
+            - name: SPARK_MASTER
+              value: "spark://spark-master-service:7077"
+            - name: PYTHONPATH
+              value: "/usr/local/spark/python:/usr/local/spark/python/lib/py4j-0.10.9.7-src.zip:/home/jovyan/work"
+          ports:
+            - containerPort: 8888
+              name: jupyter
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /home/jovyan/work
+            - name: host-dev
+              mountPath: /dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-jupyter-service
+  namespace: spark
+spec:
+  type: NodePort
+  selector:
+    app: spark-jupyter
+  ports:
+    - name: jupyter
+      port: 8888
+      targetPort: 8888
+      nodePort: 30888
